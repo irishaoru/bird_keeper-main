@@ -256,6 +256,26 @@ test('Later flocks have wider sweeps, lateral motion, and alternate targets', ()
   assert(difficulty(0) === 0 && difficulty(1200) === 1 && difficulty(10000) === 1, 'difficulty cap');
 });
 
+test('Opening stays a sweep; later flocks mix cluster, stretch, and zigzag formations', () => {
+  function patterns(distance) {
+    const game = fresh(5), seen = new Set();
+    game.player.forward = distance*10; game.distance = distance;
+    game.introduced = new Set(SPECIES.map((s) => s.id));
+    for (let i = 0; i < 200; i++) { game.creatures = [game.mount]; game.route.forward = game.player.forward; extendFlock(game); seen.add(game.route.pattern); }
+    return seen;
+  }
+  assert([...patterns(50)].join() === 'sweep', 'opening should stay gentle');
+  const late = patterns(1200);
+  for (const id of ['sweep', 'cluster', 'stretch', 'zigzag']) assert(late.has(id), `missing ${id}`);
+  const game = fresh(3);
+  game.player.forward = 4000; game.distance = 400; game.creatures = [game.mount];
+  addCreature(game, 'gull', game.player.x + 45, game.player.forward + 180);
+  game.introduced = new Set(['gull', 'eagle']);
+  extendFlock(game);
+  const bat = game.creatures.find((b) => b.speciesId === 'bat');
+  assert(bat && game.creatures.every((b) => b === bat || Math.abs(b.x - bat.x) >= 70 || Math.abs(b.forward - bat.forward) >= 70), 'intro overlaps a target');
+});
+
 test('Oblique camera preserves the rider anchor and scales distant targets', () => {
   const player = project(270,1000,1000);
   const near = project(290,1135,1000);
