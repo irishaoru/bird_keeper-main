@@ -4,6 +4,7 @@ import { addCreature, flockSpeed, extendFlock } from '../src/spawn.js';
 import { Input } from '../src/input.js';
 import { SPECIES, speciesById } from '../src/species.js';
 import { project } from '../src/projection.js';
+import { loadSave, writeSave } from '../src/storage.js';
 
 const output = document.querySelector('#results');
 const results = [];
@@ -274,6 +275,20 @@ test('Opening stays a sweep; later flocks mix cluster, stretch, and zigzag forma
   extendFlock(game);
   const bat = game.creatures.find((b) => b.speciesId === 'bat');
   assert(bat && game.creatures.every((b) => b === bat || Math.abs(b.x - bat.x) >= 70 || Math.abs(b.forward - bat.forward) >= 70), 'intro overlaps a target');
+});
+
+test('Saves keep valid discoveries and best distance; bad or blocked storage uses defaults', () => {
+  const memory = { data: {}, getItem(key) { return this.data[key] ?? null; }, setItem(key, value) { this.data[key] = value; } };
+  writeSave({ discovered: new Set(['gull', 'bat']), best: 812 }, memory);
+  const loaded = loadSave(memory);
+  assert(loaded.discovered.join() === 'gull,bat' && loaded.best === 812, 'round trip');
+  memory.data.birdKeeperSaveV1 = '{"discovered":["gull","dragon",7],"best":-5}';
+  assert(loadSave(memory).discovered.join() === 'gull' && loadSave(memory).best === 0, 'validation');
+  memory.data.birdKeeperSaveV1 = 'not json';
+  assert(loadSave(memory).discovered.length === 0 && loadSave(memory).best === 0, 'corrupt save');
+  const blocked = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
+  assert(loadSave(blocked).best === 0, 'blocked read');
+  writeSave({ discovered: new Set(['gull']), best: 10 }, blocked);
 });
 
 test('Oblique camera preserves the rider anchor and scales distant targets', () => {

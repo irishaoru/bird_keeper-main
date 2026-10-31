@@ -3,8 +3,13 @@ import { Game } from './game.js';
 import { Input } from './input.js';
 import { render, drawBird } from './render.js';
 import { SPECIES, speciesById } from './species.js';
+import { loadSave, writeSave } from './storage.js';
 
+const save = loadSave();
 const game = new Game();
+for (const id of save.discovered) game.discovered.add(id);
+let savedDiscoveries = game.discovered.size;
+function persist() { writeSave({ discovered: game.discovered, best: save.best }); }
 const stage = document.querySelector('#game');
 const canvas = document.querySelector('#sky');
 const ctx = canvas.getContext('2d');
@@ -49,7 +54,7 @@ function updateScreen() {
   hud.hidden = !['playing', 'paused'].includes(game.screen);
   overlay.hidden = game.screen === 'playing';
   if (game.screen === 'title') {
-    panel(`<span class="badge">✦</span><p class="eyebrow">WELCOME TO THE OPEN SKY</p><h2>Bird Keeper</h2><p>Ride the flock. Take the leap.<br>See how far your wings will take you.</p><p>Steer with <b>A / D</b> or <b>← / →</b>.<br>Press <b>Space</b> to leap and catch a flyer.<br>Switch before your bird gets tired.<br>Ride new species to discover them.</p>${button('start', 'Take flight ↗')}${button('guide', 'Open field guide', true)}<p class="fine">P / Esc to pause · Desktop keyboard game</p>`);
+    panel(`<span class="badge">✦</span><p class="eyebrow">WELCOME TO THE OPEN SKY</p><h2>Bird Keeper</h2><p>Ride the flock. Take the leap.<br>See how far your wings will take you.</p><p>Steer with <b>A / D</b> or <b>← / →</b>.<br>Press <b>Space</b> to leap and catch a flyer.<br>Switch before your bird gets tired.<br>Ride new species to discover them.</p>${button('start', 'Take flight ↗')}${button('guide', 'Open field guide', true)}<p class="fine">${save.best ? `Best flight: ${save.best} m · ` : ''}P / Esc to pause · Desktop keyboard game</p>`);
     document.querySelector('#start').onclick = start;
     document.querySelector('#guide').onclick = showGuide;
   } else if (game.screen === 'paused') {
@@ -57,7 +62,9 @@ function updateScreen() {
     document.querySelector('#resume').onclick = resume;
   } else if (game.screen === 'gameover') {
     const newNames = game.newDiscoveries.map((id) => speciesById(id).name).join(', ') || 'None this flight';
-    panel(`<p class="eyebrow">BACK TO EARTH, SOFTLY</p><h2>What a flight.</h2><div class="result">${Math.floor(game.distance)} <small>m</small></div><p>${game.failureReason}<br><b>${game.transfers}</b> successful transfers</p><p class="fine">New discoveries: ${newNames}</p>${button('restart', 'Fly again ↗')}${button('guide', 'Open field guide', true)}<p class="fine">Or press R to restart</p>`);
+    const newBest = Math.floor(game.distance) > save.best;
+    if (newBest) { save.best = Math.floor(game.distance); persist(); }
+    panel(`<p class="eyebrow">BACK TO EARTH, SOFTLY</p><h2>What a flight.</h2><div class="result">${Math.floor(game.distance)} <small>m</small></div><p>${game.failureReason}<br><b>${game.transfers}</b> successful transfers</p><p class="fine">${newBest ? 'New best flight!' : `Best flight: ${save.best} m`}<br>New discoveries: ${newNames}</p>${button('restart', 'Fly again ↗')}${button('guide', 'Open field guide', true)}<p class="fine">Or press R to restart</p>`);
     document.querySelector('#restart').onclick = start;
     document.querySelector('#guide').onclick = showGuide;
   } else if (game.screen === 'guide') {
@@ -99,6 +106,8 @@ function frame(time) {
       accumulator -= CONFIG.step;
     }
   } else accumulator = 0;
+  // Save a first discovery immediately rather than waiting for the run to end.
+  if (game.discovered.size !== savedDiscoveries) { savedDiscoveries = game.discovered.size; persist(); }
   updateScreen();
   if (!hud.hidden) updateHud();
   else toast.hidden = true;

@@ -1,4 +1,7 @@
 // Real page and event handlers, with only the RAF clock replaced for repeatability.
+// Set aside any saved progress from real play so the page starts fresh; restored at the end.
+const savedProgress = localStorage.getItem('birdKeeperSaveV1');
+localStorage.removeItem('birdKeeperSaveV1');
 const iframe = document.querySelector('iframe');
 const markup = await (await fetch('../index.html')).text();
 const loaded = new Promise((resolve) => iframe.addEventListener('load', resolve, { once: true }));
@@ -71,5 +74,7 @@ test('Three failures and R restarts, plus results guide return', () => {
     assert(parseInt(doc.querySelector('#distance').textContent) === 0, 'restart score');
   }
 });
+if (savedProgress === null) localStorage.removeItem('birdKeeperSaveV1');
+else localStorage.setItem('birdKeeperSaveV1', savedProgress);
 document.querySelector('#results').textContent = results.join('\n') + `\n\n${results.length - failures}/${results.length} checks passed.`;
 document.body.dataset.status = failures ? 'failed' : 'passed';
