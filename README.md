@@ -19,11 +19,14 @@ Play online: https://irishaoru.github.io/bird_keeper-main/ (or run locally as de
 | **Flock formations.** Each group of birds now uses one of four layouts: **sweep** (the author's original curve, unchanged), **cluster** (three birds side by side, so you choose a species), **stretch** (one long gap your mount must close before tiring), and **zigzag** (hard alternating left/right swings with more drift). Before ~144 m only sweeps appear, so the opening is as gentle as before. Cluster unlocks at ~144 m, stretch at ~240 m, zigzag at ~420 m. The author's forks still appear, now only during sweeps, so density doesn't keep growing. | `src/spawn.js` | Author's top Phase 2 request: "spawning is still too easy and too linear." My own playtest agreed: I reached 2,908 m with 25 transfers on one run. |
 | **New-species intros no longer overlap other birds.** The newcomer still appears 180 units ahead. It tries the author's original spot (+45) first, then −45, +120 and −120, using the first spot with no other bird within 70 units. | `src/spawn.js` | Listed in `phase2_goals.md` and the original known limitations. |
 | **Short-window layout fix.** The left intro panel hides when the window is shorter than 680 px, mirroring the author's existing rule for narrow windows. | `styles.css` | Found while testing AC-04: in short windows the panel didn't shrink, pushing the game partly off-screen so you had to scroll. |
-| **One new test** checks that the opening stays a sweep, that all four formations appear late in a run, and that a new-species bird avoids an occupied spot. | `tests/simulation.js` | Covers the new behaviour, as `phase2_goals.md` asks. |
+| **Saved progress.** Discoveries and best distance are stored in one versioned browser-storage entry (`birdKeeperSaveV1`). A first discovery saves immediately, and best distance updates when a run ends. Unknown species IDs and negative or invalid distances are ignored; blocked or corrupt storage falls back to an in-memory session. The results screen shows "New best flight!" or "Best flight: X m", and the title screen shows your best once you have one. A new run still starts at 0 m with only gulls eligible. | `src/storage.js` (new), `src/main.js` | AC-22, following the plan in `phase2_goals.md`. Saving lives in `main.js` so `game.js` stays a pure simulation, as the author intended. |
+| **Owl (fifth species).** Unlocks at 600 m: 9 s carry, 1.05× pace (owls are slow, deliberate fliers), 250 units/s steering, spawn weight 1.5. These stats keep the author's "rarer rides carry longer" order (gull 5 → eagle 7 → bat 8 → owl 9 → pterodactyl 10 s). It has its own silhouette: broad rounded wings, ear tufts, a pale face disc and a short beak. | `src/species.js`, `src/render.js` | AC-23 and the author's request for more flying animals. |
+| **Day/night cycle.** A 60-second repeating cycle of active flight: day (0–20 s) → dusk → night (33–45 s) → dawn → day. Timed from `game.elapsed`, so pausing freezes it and every run starts in daylight. Night adds stars and dims the scenery, but birds, catch rings and labels are drawn on top at full brightness. Labels and TIRED/JUMP! get a pale outline, catch rings get a lighter edge at night, and the HUD text switches to light colours. | `src/render.js`, `src/main.js`, `styles.css` | AC-23 sky regions plus the author's new day/night request. |
+| **New and updated tests.** Three new tests: flock formations and intro spacing; save validation and blocked storage; the day/night cycle repeating, freezing while paused and resetting on restart. The UI test sets aside a real saved game while it runs and restores it afterwards. The tests' hard-coded four-species counts were updated to five, as the author warned would be needed. | `tests/simulation.js`, `tests/ui.js` | Covers the new behaviour, as `phase2_goals.md` asks. |
 
-**How much of the original was kept:** no restructuring. Of the original 995 lines of code, 7 were edited and none were removed; about 65 lines were added. All spawn changes are inside the author's existing `extendFlock` loop and reuse their helpers and style (`choosePattern` mirrors their `chooseSpecies`).
+**How much of the original was kept:** no restructuring. Of the original 995 lines of code (JS, CSS, HTML), about 20 were edited (around 2%) and none of the author's logic was removed; about 170 lines were added. All spawn changes are inside the author's existing `extendFlock` loop and reuse their helpers and style (`choosePattern` mirrors their `chooseSpecies`).
 
-**Tests after Phase 2:** `/tests/` reports **17/17** (the author's 16 plus one new), and `/tests/ui.html` reports **4/4**. The author's bot still reaches 1,600 m on all 20 seeds with the new formations, so no layout creates an unreachable gap.
+**Tests after Phase 2:** `/tests/` reports **19/19** (the author's 16 plus three new), and `/tests/ui.html` reports **4/4**. The author's bot still reaches 1,600 m on all 20 seeds with the new formations, so no layout creates an unreachable gap.
 
 ### Acceptance criteria report (Phase 2)
 
@@ -41,10 +44,10 @@ Play online: https://irishaoru.github.io/bird_keeper-main/ (or run locally as de
 | AC-08 Missed jump | **Met** | Verified by hand: a missed jump falls and shows "Missed the next ride" with the distance frozen. |
 | AC-09 Fatigue | **Met** | Verified by hand: with no input the gull shows TIRED/JUMP!, throws you off at 5 s, and you fall. |
 | AC-10 Viable flock | **Met** | Verified by hand: a 2,908 m run (well past the 1,200 m speed cap) with no unreachable gaps. After the formation changes, the author's bot still reaches 1,600 m on all 20 seeds with fewer than 30 entities. |
-| AC-11 Four species | **Met** | In my 2,908 m run I reached all four thresholds and discovered the pterodactyl. The author's tests confirm each species can be caught and that none appears before its threshold. |
+| AC-11 Four species | **Met** | Now five species with the owl. In my 2,908 m run I reached all four thresholds and discovered the pterodactyl. The author's tests confirm each species can be caught and that none appears before its threshold. |
 | AC-12 New-species opportunity | **Met (improved)** | Each threshold still drops the new species 180 units ahead. Phase 2 moves it away from other birds so catching it is a deliberate choice (new test). |
 | AC-13 Discovery | **Met** | The results screen listed new discoveries from my run (e.g. "Pterodactyl"). The first-catch-only award, the notification and no credit for merely seeing a species are covered by the author's tests. |
-| AC-14 Field guide | **Met** | The guide opens from the title and results screens; the author's UI test checks navigation and that discoveries are kept across restarts. |
+| AC-14 Field guide | **Met** | The guide opens from the title and results screens and fits all five entries (checked with a screenshot); the author's UI test checks navigation and that discoveries are kept across restarts. |
 | AC-15 HUD and results | **Met** | Verified by hand: the HUD shows distance, mount, timer and discoveries. Results show the final distance, transfers, new discoveries, the failure reason, Fly Again, and R to restart. |
 | AC-16 Progression | **Met** | Speed rises to a cap at 1,200 m (author's tests). Formations now also get harder with distance, and a new run resets to the gentle opening. |
 | AC-17 Pause and focus | **Met** | Author's tests (frozen state while paused, cleared keys on focus loss). Not re-checked by hand. |
@@ -52,8 +55,8 @@ Play online: https://irishaoru.github.io/bird_keeper-main/ (or run locally as de
 | AC-19 Timing and boundaries | **Met** | Verified by hand: throttled Chrome to ~30 FPS by skipping every other animation frame from the console. A no-input run ended at **123 m at both 30 and 60 FPS**, and catches behaved normally at 30 FPS. Edge cases are covered by the author's tests. |
 | AC-20 Clear visuals | **Met** | Verified by hand: the rider is drawn separately from the mount, jumps show an arc and catch ring, species differ by silhouette and label, and clouds are harmless. |
 | AC-21 Different mount handling | **Met** | Unchanged from Phase 1: the author's revised per-species carry time, pace and steering. |
-| AC-22 Persistent progress | **Not met** | Not implemented yet; discoveries reset on refresh. |
-| AC-23 Owl and regions | **Not met** | Not implemented yet. |
+| AC-22 Persistent progress | **Met** | Added in Phase 2 (`src/storage.js`). A new test covers saving and loading, invalid species and distances, corrupt JSON, and blocked storage. The author's restart tests still confirm a new run resets distance and species eligibility. |
+| AC-23 Owl and regions | **Met** | The owl unlocks at 600 m, has its own silhouette and guide entry, and can be caught and discovered (added to the author's per-species catch test). For "regions" I built the author's newer day/night request; the author's HUD already names distance regions (Open Sky / Crosswinds / High Altitude). Checked night readability with screenshots: targets, rings and labels stay visible, and the cycle changes no collision rules. |
 | AC-24 Storms | **Not met** | Skipped on purpose: the spec's cut order drops storms early, and their fairness rules (2 s warning, never block the route) weren't realistic to verify in the time available. |
 | AC-25 Audio | **Not met** | Skipped on purpose: first on the spec's cut list. |
 | AC-26 Additional polish | **Omitted** | No P2 features attempted. |
@@ -65,15 +68,15 @@ Play online: https://irishaoru.github.io/bird_keeper-main/ (or run locally as de
 | Less linear, more demanding spawning | **Partially met.** Four formations with distance-based unlocking are in. Still needs more human playtesting of difficulty at late-run speeds. |
 | Faster and harder with distance | **Met.** The author's speed curve is unchanged; formations now add difficulty too. |
 | Rarer creatures carry longer, species speeds | **Met** in Phase 1; unchanged. |
-| More birds and flying animals | **Not met** yet. |
-| Day/night cycle | **Not met** yet. |
+| More birds and flying animals | **Partially met.** Added the owl; no further species. |
+| Day/night cycle | **Met.** 60-second repeating day → dusk → night → dawn cycle that freezes while paused and resets each run. |
 | Chunky 2.5D aesthetic | Unchanged from Phase 1. |
 
 ### Known issues and next steps
 
 1. Playtest the new formations at late-run speeds and tune their numbers in `PATTERNS` and `extendFlock` (`src/spawn.js`) if any feel unfair.
-2. Saved discoveries and best distance (AC-22): add `src/storage.js` as described in `phase2_goals.md`.
-3. Owl and a day/night cycle (AC-23).
+2. More species beyond the owl. Add a row to `SPECIES` in `src/species.js`, a silhouette branch in `drawBird` (`src/render.js`), and update the species counts in the tests.
+3. Tune the day/night length (`DAY_LENGTH` in `src/render.js`) after more playtesting.
 4. Storms and audio (AC-24, AC-25) remain deferred.
 
 ## Run

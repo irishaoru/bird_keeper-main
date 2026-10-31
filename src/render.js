@@ -22,6 +22,7 @@ export function drawBird(ctx, id, x, y, time = 0, scale = 1) {
     let outline;
     if (id === 'bat') outline = [[6,12],[30,28],[61,0],[42,4],[36,-13],[24,-6],[13,-24],[5,-15]];
     else if (id === 'pterodactyl') outline = [[5,12],[62,32],[39,-18],[8,-22]];
+    else if (id === 'owl') outline = [[6,12],[30,26],[52,20],[60,6],[54,-8],[38,-16],[12,-20]];
     else if (id === 'eagle') outline = [[6,12],[31,23],[59,14],[59,4],[51,6],[51,-3],[43,0],[42,-10],[31,-7],[12,-19]];
     else outline = [[5,12],[29,23],[55,4],[43,-10],[23,-4],[5,-15]];
     const vertices = outline.map(([wx, wy]) => [wx * side, wy, 22 + wx / 60 * flap]);
@@ -35,8 +36,14 @@ export function drawBird(ctx, id, x, y, time = 0, scale = 1) {
   if (id === 'bat') {
     for (const side of [-1, 1]) prism(ctx, [[side*4,18,40],[side*9,19,54],[side*11,9,40]], 4, species.color);
   } else {
-    prism(ctx, [[-7,26,35],[7,26,35],[2,id === 'pterodactyl' ? 59 : 42,30],[-2,id === 'pterodactyl' ? 59 : 42,30]], 7, '#efb746');
+    const beak = id === 'pterodactyl' ? 59 : id === 'owl' ? 31 : 42;
+    prism(ctx, [[-7,26,35],[7,26,35],[2,beak,30],[-2,beak,30]], 7, '#efb746');
     if (id === 'pterodactyl') prism(ctx, [[-3,15,42],[0,-3,55],[4,10,40]], 5, '#b44b3e');
+    // Owl: short beak, pale face disc, and ear tufts.
+    if (id === 'owl') {
+      polygon(ctx, [[-9,14,41],[9,14,41],[11,24,41],[0,28,41],[-11,24,41]].map(modelPoint), '#f3e6c8');
+      for (const side of [-1, 1]) prism(ctx, [[side*5,14,40],[side*10,12,53],[side*12,6,40]], 4, species.wing);
+    }
   }
   polygon(ctx, [[9,17,35],[9,22,35],[9,22,31],[9,17,31]].map(modelPoint), '#213946');
   polygon(ctx, [[-9,20,35],[-9,24,35],[-9,24,31],[-9,20,31]].map(modelPoint), '#213946');
@@ -87,10 +94,41 @@ function drawIsland(ctx, x, y, scale, variant) {
   ctx.restore();
 }
 
+// Day → dusk → night → dawn every minute of active flight. Driven by game.elapsed,
+// so pausing freezes the cycle and every new run starts in daylight.
+const DAY_LENGTH = 60;
+const SKY = {
+  day: { colors: ['#82c9d6', '#a5ddd9', '#c7e9d7'], night: 0 },
+  dusk: { colors: ['#6f7fb8', '#e9a27f', '#f6d3a1'], night: .4 },
+  night: { colors: ['#22305a', '#34497a', '#56709a'], night: 1 },
+};
+const CYCLE = [[0, 'day'], [.33, 'day'], [.45, 'dusk'], [.55, 'night'], [.75, 'night'], [.85, 'dusk'], [.95, 'day'], [1, 'day']];
+
+function mix(a, b, k) {
+  const channel = (hex, i) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
+  return `rgb(${[0, 1, 2].map((i) => Math.round(channel(a, i) + (channel(b, i) - channel(a, i)) * k)).join()})`;
+}
+
+export function skyAt(elapsed) {
+  const t = (elapsed / DAY_LENGTH) % 1;
+  const i = CYCLE.findIndex(([at]) => at > t);
+  const [fromAt, from] = CYCLE[i - 1], [toAt, to] = CYCLE[i];
+  const k = (t - fromAt) / (toAt - fromAt);
+  return {
+    colors: SKY[from].colors.map((color, j) => mix(color, SKY[to].colors[j], k)),
+    night: SKY[from].night + (SKY[to].night - SKY[from].night) * k,
+  };
+}
+
 function drawBackground(ctx, game) {
+  const light = skyAt(game.elapsed);
   const sky = ctx.createLinearGradient(0, 0, 0, 900);
-  sky.addColorStop(0, '#82c9d6'); sky.addColorStop(.4, '#a5ddd9'); sky.addColorStop(1, '#c7e9d7');
+  sky.addColorStop(0, light.colors[0]); sky.addColorStop(.4, light.colors[1]); sky.addColorStop(1, light.colors[2]);
   ctx.fillStyle = sky; ctx.fillRect(0, 0, 540, 900);
+  if (light.night > .4) {
+    ctx.fillStyle = `rgba(255, 250, 225, ${(light.night - .4) * 1.3})`;
+    for (let i = 0; i < 40; i++) ctx.fillRect((i * 97) % 540, (i * 61 + game.player.forward * .04) % 900, 2, 2);
+  }
   // Separate parallax layers, all derived from distance (frozen while paused).
   for (let i = 0; i < 7; i++) {
     const y = ((i * 191 + game.player.forward * .16) % 1250) - 140;
@@ -100,6 +138,8 @@ function drawBackground(ctx, game) {
     const y = ((i * 223 + game.player.forward * .28) % 1400) - 220;
     drawIsland(ctx, i % 2 ? 565 : -34, y, .45 + (y + 220) / 1800, i);
   }
+  // Dim the scenery at night; creatures, rings, and labels are drawn afterwards at full brightness.
+  ctx.fillStyle = `rgba(20, 30, 70, ${light.night * .35})`; ctx.fillRect(0, 0, 540, 900);
   ctx.strokeStyle = '#f6fff65c'; ctx.lineWidth = 2;
   for (let i = 0; i < 12; i++) {
     const y = ((i * 107 + game.player.forward * .7) % 1100) - 100;
@@ -116,7 +156,7 @@ function catchRing(ctx, bird, game) {
     const point = project(bird.x + Math.cos(angle) * CONFIG.catchX, bird.forward + Math.sin(angle) * CONFIG.catchForward, game.player.forward);
     if (!i) ctx.moveTo(point.x, point.y); else ctx.lineTo(point.x, point.y);
   }
-  ctx.fillStyle = '#f8ffc12e'; ctx.strokeStyle = '#397f7780'; ctx.lineWidth = 1.5;
+  ctx.fillStyle = '#f8ffc12e'; ctx.strokeStyle = skyAt(game.elapsed).night > .5 ? '#d8fff4b0' : '#397f7780'; ctx.lineWidth = 1.5;
   ctx.fill(); ctx.stroke();
 }
 
@@ -157,12 +197,18 @@ export function render(ctx, game) {
       drawRider(ctx, point.x, point.y, game.elapsed, point.scale, 1, species.size);
       if (game.rideTime < CONFIG.warningTime) {
         ctx.fillStyle = '#a3452a'; ctx.font = '900 16px sans-serif'; ctx.textAlign = 'center';
+        ctx.lineWidth = 3; ctx.strokeStyle = '#fff6ddd0';
+        ctx.strokeText(game.rideTime < .6 ? 'JUMP!' : 'TIRED', point.x, point.y + 57);
         ctx.fillText(game.rideTime < .6 ? 'JUMP!' : 'TIRED', point.x, point.y + 57);
       }
     } else if (!entity.spent && point.y > 220) {
       ctx.font = `800 ${Math.max(11, 13 * point.scale)}px sans-serif`;
       ctx.textAlign = 'center'; ctx.fillStyle = '#275765';
-      ctx.fillText(species.name + (game.discovered.has(entity.speciesId) ? '' : ' · NEW'), point.x, point.y + 41 * point.scale);
+      // A pale halo keeps labels readable against the night sky.
+      const label = species.name + (game.discovered.has(entity.speciesId) ? '' : ' · NEW');
+      ctx.lineWidth = 3; ctx.strokeStyle = '#fff6ddc0';
+      ctx.strokeText(label, point.x, point.y + 41 * point.scale);
+      ctx.fillText(label, point.x, point.y + 41 * point.scale);
     }
     ctx.restore();
   }

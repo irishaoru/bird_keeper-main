@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { Game } from './game.js';
 import { Input } from './input.js';
-import { render, drawBird } from './render.js';
+import { render, drawBird, skyAt } from './render.js';
 import { SPECIES, speciesById } from './species.js';
 import { loadSave, writeSave } from './storage.js';
 
@@ -92,6 +92,7 @@ function updateHud() {
   timer.style.background = game.rideTime < CONFIG.warningTime ? '#d9684c' : '#257c73';
   discoveries.textContent = `${game.discovered.size} / ${SPECIES.length} discovered`;
   speedLabel.textContent = `${Math.round(game.forwardSpeed / 10)} m/s · ${game.distance < 300 ? 'OPEN SKY' : game.distance < 800 ? 'CROSSWINDS' : 'HIGH ALTITUDE'}`;
+  stage.classList.toggle('night', skyAt(game.elapsed).night > .5);
   toast.hidden = game.screen !== 'playing' || game.noticeTime <= 0;
   if (toast.textContent !== game.notice) toast.textContent = game.notice;
 }

@@ -56,4 +56,6 @@ canvas { display: block; width: 100%; height: 100%; }
 @media (max-width: 680px) { .intro { display: none; } .layout { padding: 16px; min-height: 100svh; } .game { width: min(540px, calc((100svh - 32px) * .6), calc(100vw - 32px)); } }
 @media (max-height: 680px) { .intro { display: none; } }
 
+/* Light HUD text while the day/night cycle is dark. */
+.game.night .hud, .game.night .speed-label, .game.night .stage-footer { color: #fff6dd; }
 .speed-label { margin-top: 2cqw; font-size: 2.1cqw; font-weight: 800; letter-spacing: 1px; color: #285667; }

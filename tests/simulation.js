@@ -5,6 +5,7 @@ import { Input } from '../src/input.js';
 import { SPECIES, speciesById } from '../src/species.js';
 import { project } from '../src/projection.js';
 import { loadSave, writeSave } from '../src/storage.js';
+import { skyAt } from '../src/render.js';
 
 const output = document.querySelector('#results');
 const results = [];
@@ -146,7 +147,7 @@ function pilot(seed, renderHz = 60) {
       const jump = !!target && game.mode === 'mounted' && catchTime < .8 && catchTime > .2 && Math.abs(target.x-game.player.x) < CONFIG.steering * (catchTime-.08);
       game.update(CONFIG.step, direction, jump);
       peakEntities = Math.max(peakEntities, game.creatures.length);
-      assert(game.creatures.every((bird) => ({ gull: 0, eagle: 150, bat: 400, pterodactyl: 800 })[bird.speciesId] <= game.distance), 'premature spawn');
+      assert(game.creatures.every((bird) => ({ gull: 0, eagle: 150, bat: 400, owl: 600, pterodactyl: 800 })[bird.speciesId] <= game.distance), 'premature spawn');
       accumulator -= CONFIG.step;
     }
   }
@@ -159,7 +160,7 @@ test('20 seeded routes allow ordinary transfers beyond 1600 m with bounded entit
     assert(game.distance >= 1600, `seed ${seed} failed at ${game.distance.toFixed(0)} m`);
     assert(game.transfers > 3 && baseSpeed(game.distance) === 330, 'chain/cap');
     assert(peakEntities < 30, `pool reached ${peakEntities}`);
-    assert(game.introduced.size === 4, 'missing threshold introduction');
+    assert(game.introduced.size === 5, 'missing threshold introduction');
   }
 });
 
@@ -171,7 +172,7 @@ test('30 and 60 Hz render schedules produce equal simulation results', () => {
 });
 
 test('Every species can be caught and discovered only once after its threshold', () => {
-  for (const [id, threshold] of [['eagle', 150], ['bat', 400], ['pterodactyl', 800]]) {
+  for (const [id, threshold] of [['eagle', 150], ['bat', 400], ['owl', 600], ['pterodactyl', 800]]) {
     const game = fresh();
     game.player.forward = threshold * 10;
     game.distance = threshold;
@@ -289,6 +290,17 @@ test('Saves keep valid discoveries and best distance; bad or blocked storage use
   const blocked = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
   assert(loadSave(blocked).best === 0, 'blocked read');
   writeSave({ discovered: new Set(['gull']), best: 10 }, blocked);
+});
+
+test('Day/night cycle repeats, freezes while paused, and restarts in daylight', () => {
+  assert(skyAt(0).night === 0 && skyAt(40).night === 1 && skyAt(60).night === 0, 'cycle phases');
+  assert(skyAt(27).night > 0 && skyAt(27).night < 1, 'smooth dusk');
+  const game = fresh();
+  steps(game, 60 * 40);
+  game.pause(); const before = skyAt(game.elapsed).night; steps(game, 600);
+  assert(skyAt(game.elapsed).night === before, 'paused cycle advanced');
+  game.resume(); game.startRun();
+  assert(skyAt(game.elapsed).night === 0, 'restart should be daytime');
 });
 
 test('Oblique camera preserves the rider anchor and scales distant targets', () => {

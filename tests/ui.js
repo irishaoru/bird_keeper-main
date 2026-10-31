@@ -26,8 +26,8 @@ frame();
 test('Title, empty field guide, and Back', () => {
   assert(doc.querySelector('#start'), 'missing title');
   click('#guide');
-  assert(doc.querySelectorAll('.guide-entry').length === 4, 'guide roster');
-  assert(doc.querySelector('.panel').textContent.includes('0 of 4'), 'premature discovery');
+  assert(doc.querySelectorAll('.guide-entry').length === 5, 'guide roster');
+  assert(doc.querySelector('.panel').textContent.includes('0 of 5'), 'premature discovery');
   click('#back');
   assert(doc.querySelector('#start'), 'back to title');
 });
@@ -65,7 +65,7 @@ test('Three failures and R restarts, plus results guide return', () => {
     assert(doc.querySelector('.panel').textContent.includes('Missed the next ride'), 'failure reason');
     if (run === 0) {
       click('#guide');
-      assert(doc.querySelector('.panel').textContent.includes('1 of 4'), 'lost discoveries');
+      assert(doc.querySelector('.panel').textContent.includes('1 of 5'), 'lost discoveries');
       click('#back');
       assert(doc.querySelector('#restart'), 'guide back to results');
     }
