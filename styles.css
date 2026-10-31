@@ -54,6 +54,6 @@ canvas { display: block; width: 100%; height: 100%; }
 .vertical-line { height: 100px; width: 1px; background: #bdcdc5; }
 @media (max-width: 900px) { .margin-note { display: none; } .intro { width: 240px; } h1 { font-size: 54px; } .layout { gap: 30px; } }
 @media (max-width: 680px) { .intro { display: none; } .layout { padding: 16px; min-height: 100svh; } .game { width: min(540px, calc((100svh - 32px) * .6), calc(100vw - 32px)); } }
-@media (max-height: 760px) { .intro { display: none; } }
+@media (max-height: 680px) { .intro { display: none; } }
 
 .speed-label { margin-top: 2cqw; font-size: 2.1cqw; font-weight: 800; letter-spacing: 1px; color: #285667; }
