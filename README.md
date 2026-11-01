@@ -30,31 +30,31 @@ Play online: https://irishaoru.github.io/bird_keeper-main/ (or run locally as de
 
 ### Acceptance criteria report (Phase 2)
 
-"Verified by hand" means I checked it myself in Chrome on macOS. "Author's tests" means the author's automated checks still pass after my changes, but I didn't separately re-check that behaviour by hand.
+Criteria the original author had already met keep **their evidence word for word**, marked "(Phase 1 author's evidence)". Their automated tests still pass after my changes. Where Phase 2 changed something in one of those criteria, a **Phase 2:** note follows. The four criteria the author left partially met (AC-04, 06, 10, 19) and the ones they hadn't done (AC-22 onward) have my own evidence; "verified by hand" means I checked it myself in Chrome on macOS.
 
 | ID | Status | Evidence |
 | --- | --- | --- |
-| AC-01 Run and instructions | **Met** | Verified by hand: the local server command and the GitHub Pages link both open the title screen, which explains steering, Space to leap, fatigue, and discovering species. No network assets. |
-| AC-02 Fresh run | **Met** | Verified by hand: you start centred on a gull at 0 m with a full timer and birds ahead. The author's UI test confirms the starting Space press doesn't also jump. |
-| AC-03 Steering | **Met** | Steering worked throughout my playtesting. Both key pairs, opposite-key cancelling, airborne steering and edge clamping are covered by the author's tests. |
+| AC-01 Run and instructions | **Met** | (Phase 1 author's evidence) Local server returns HTTP 200; title includes controls, fatigue, and discovery instructions; no external runtime resources. |
+| AC-02 Fresh run | **Met** | (Phase 1 author's evidence) Simulation verifies centered gull, zero distance, five-second timer, nearby target; UI verifies starting Space is consumed. |
+| AC-03 Steering | **Met** | (Phase 1 author's evidence) Both key pairs feed direct steering; cancellation and bounds checked; airborne steering checked separately. |
 | AC-04 Composition | **Met (after fix)** | Verified by hand in wide, narrow and short windows. Wide and narrow already worked: the playfield keeps its 3:5 shape, and the side panel hides below 680 px wide while the in-game title screen still shows controls. Short windows pushed the game off-screen; fixed with the 680 px height rule above. |
-| AC-05 Manual jump | **Met** | Verified by hand: Space launches one visible jump arc with a ring marking the catch position. Held-Space suppression is covered by the author's UI test. |
+| AC-05 Manual jump | **Met** | (Phase 1 author's evidence) UI check observes fresh-press jump and held-Space suppression through landing; renderer draws an arc. |
 | AC-06 Successful transfer | **Met** | Verified by hand: three or more consecutive player-directed transfers on the first try; one run had 25 transfers. The mount label and timer refresh on each catch. |
-| AC-07 No free swaps or recatches | **Met** | Author's tests (spent birds excluded, nearest-candidate tie-breaking, no swaps while mounted). Nothing in Phase 2 changed catching. |
-| AC-08 Missed jump | **Met** | Verified by hand: a missed jump falls and shows "Missed the next ride" with the distance frozen. |
-| AC-09 Fatigue | **Met** | Verified by hand: with no input the gull shows TIRED/JUMP!, throws you off at 5 s, and you fall. |
+| AC-07 No free swaps or recatches | **Met** | (Phase 1 author's evidence) Simulation checks spent exclusion, stable tie resolution, and no further transfers while mounted. |
+| AC-08 Missed jump | **Met** | (Phase 1 author's evidence) Missing freezes distance at falling; late overlap cannot catch; game-over reason checked. |
+| AC-09 Fatigue | **Met** | (Phase 1 author's evidence) Timer, warnings, auto-ejection, fresh catch timer, and simultaneous manual/fatigue behavior implemented and checked. |
 | AC-10 Viable flock | **Met** | Verified by hand: a 2,908 m run (well past the 1,200 m speed cap) with no unreachable gaps. After the formation changes, the author's bot still reaches 1,600 m on all 20 seeds with fewer than 30 entities. |
-| AC-11 Four species | **Met** | Now five species with the owl. In my 2,908 m run I reached all four thresholds and discovered the pterodactyl. The author's tests confirm each species can be caught and that none appears before its threshold. |
-| AC-12 New-species opportunity | **Met (improved)** | Each threshold still drops the new species 180 units ahead. Phase 2 moves it away from other birds so catching it is a deliberate choice (new test). |
-| AC-13 Discovery | **Met** | The results screen listed new discoveries from my run (e.g. "Pterodactyl"). The first-catch-only award, the notification and no credit for merely seeing a species are covered by the author's tests. |
-| AC-14 Field guide | **Met** | The guide opens from the title and results screens and fits all five entries (checked with a screenshot); the author's UI test checks navigation and that discoveries are kept across restarts. |
-| AC-15 HUD and results | **Met** | Verified by hand: the HUD shows distance, mount, timer and discoveries. Results show the final distance, transfers, new discoveries, the failure reason, Fly Again, and R to restart. |
-| AC-16 Progression | **Met** | Speed rises to a cap at 1,200 m (author's tests). Formations now also get harder with distance, and a new run resets to the gentle opening. |
-| AC-17 Pause and focus | **Met** | Author's tests (frozen state while paused, cleared keys on focus loss). Not re-checked by hand. |
-| AC-18 Reliable restart | **Met** | Verified by hand: Fly Again and R both start a fresh run. The author's UI test runs three restart cycles. |
+| AC-11 Four species | **Met** | (Phase 1 author's evidence) All four species have names, distinct shape branches, thresholds, and successful catch checks; long-run checks reject premature spawns. **Phase 2:** a fifth species (owl, 600 m) was added and included in the same checks. |
+| AC-12 New-species opportunity | **Met** | (Phase 1 author's evidence) On threshold crossing, a new species is immediately placed 180 units ahead and at most 45 units laterally from the player; checks demonstrate catchability. **Phase 2:** if that spot is occupied, the newcomer now moves to the first clear spot (−45, +120 or −120), so it never overlaps another bird; covered by a new test. |
+| AC-13 Discovery | **Met** | (Phase 1 author's evidence) Gull is credited only on start; introduction alone does not discover; first catch awards once and shows a toast. |
+| AC-14 Field guide | **Met** | (Phase 1 author's evidence) UI checks title/results guide navigation, four entries, threshold hints, and retained session discovery. **Phase 2:** the guide now has five entries (owl added) and still fits; the UI test was updated to five. |
+| AC-15 HUD and results | **Met** | (Phase 1 author's evidence) HUD and results include specified P0 information; inspected gameplay screenshot and UI result assertions. |
+| AC-16 Progression | **Met** | (Phase 1 author's evidence) Base curve rises from 180 to 330 by 1,200 m, multiplied by mounted species pace; long-run and repeated-reset checks verify progression and fresh eligibility. **Phase 2:** flock formations also get harder with distance, and a new run resets to the gentle opening. |
+| AC-17 Pause and focus | **Met** | (Phase 1 author's evidence) Simulation freezes all state when paused; UI checks pause/resume and focus loss; held input clears on blur. |
+| AC-18 Reliable restart | **Met** | (Phase 1 author's evidence) UI executes three miss/R-restart cycles; simulation verifies fresh entity IDs, timers, pool, and retained discoveries. |
 | AC-19 Timing and boundaries | **Met** | Verified by hand: throttled Chrome to ~30 FPS by skipping every other animation frame from the console. A no-input run ended at **123 m at both 30 and 60 FPS**, and catches behaved normally at 30 FPS. Edge cases are covered by the author's tests. |
-| AC-20 Clear visuals | **Met** | Verified by hand: the rider is drawn separately from the mount, jumps show an arc and catch ring, species differ by silhouette and label, and clouds are harmless. |
-| AC-21 Different mount handling | **Met** | Unchanged from Phase 1: the author's revised per-species carry time, pace and steering. |
+| AC-20 Clear visuals | **Met** | (Phase 1 author's evidence) Extruded shaded meshes, distinct silhouettes/labels, separate block-like rider, jump arc and projected catch rings are drawn; clouds render behind targets and have no collision. |
+| AC-21 Different mount handling | **Met** | (Phase 1 author's evidence) Author-revised carry times, forward speed ratios, and mounted steering are configured per species and verified through actual simulation movement. Airborne rules stay shared. |
 | AC-22 Persistent progress | **Met** | Added in Phase 2 (`src/storage.js`). A new test covers saving and loading, invalid species and distances, corrupt JSON, and blocked storage. The author's restart tests still confirm a new run resets distance and species eligibility. |
 | AC-23 Owl and regions | **Met** | The owl unlocks at 600 m, has its own silhouette and guide entry, and can be caught and discovered (added to the author's per-species catch test). For "regions" I built the author's newer day/night request; the author's HUD already names distance regions (Open Sky / Crosswinds / High Altitude). Checked night readability with screenshots: targets, rings and labels stay visible, and the cycle changes no collision rules. |
 | AC-24 Storms | **Not met** | Skipped on purpose: the spec's cut order drops storms early, and their fairness rules (2 s warning, never block the route) weren't realistic to verify in the time available. |
